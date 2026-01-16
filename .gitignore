@@ -1,0 +1,27 @@
+# Dependencies
+node_modules
+/dist
+/build
+/coverage
+
+# Environment variables
+.env
+.env.local
+.env.*
+
+# Logs and databases
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+pnpm-error.log*
+*.sqlite
+*.sqlite-journal
+
+# IDE and OS files
+.DS_Store # macOS
+.vscode/ # VS Code settings
+Thumbs.db # Windows
+
+# Uploaded files
+/uploads

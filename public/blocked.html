@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowBlock - Stay Focused</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-gradient-start: #e0e7ff;
+      --bg-gradient-end: #f3e8ff;
+      --text-primary: #1e1b4b;
+      --text-secondary: #6366f1;
+      --text-muted: #6b7280;
+      --card-bg: rgba(255, 255, 255, 0.8);
+      --card-border: rgba(255, 255, 255, 0.5);
+      --button-primary-bg: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      --button-secondary-bg: rgba(255, 255, 255, 0.6);
+      --button-secondary-hover: rgba(255, 255, 255, 0.9);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-gradient-start: #1e1b4b;
+        --bg-gradient-end: #312e81;
+        --text-primary: #f1f5f9;
+        --text-secondary: #a5b4fc;
+        --text-muted: #94a3b8;
+        --card-bg: rgba(30, 27, 75, 0.6);
+        --card-border: rgba(99, 102, 241, 0.2);
+        --button-secondary-bg: rgba(99, 102, 241, 0.2);
+        --button-secondary-hover: rgba(99, 102, 241, 0.3);
+      }
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+      padding: 1.5rem;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 540px;
+      width: 100%;
+      text-align: center;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .icon-container {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      background: var(--button-primary-bg);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: float 3s ease-in-out infinite;
+      box-shadow: 0 10px 40px rgba(79, 70, 229, 0.3);
+    }
+
+    .icon-container svg {
+      width: 40px;
+      height: 40px;
+      color: white;
+    }
+
+    .time-display {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+      line-height: 1.3;
+    }
+
+    .domain {
+      color: var(--text-secondary);
+      word-break: break-all;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .quote {
+      font-size: 1.125rem;
+      font-style: italic;
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+
+    .quote-author {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .session-info {
+      display: none;
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .session-info.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .session-timer {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .session-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.5rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--button-primary-bg);
+      color: white;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+    }
+
+    .btn-secondary {
+      background: var(--button-secondary-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--button-secondary-hover);
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .button-row .btn {
+      flex: 1;
+    }
+
+    .message {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-top: 1.5rem;
+    }
+
+    .break-notice {
+      display: none;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 1rem;
+      color: #059669;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .break-notice {
+        color: #34d399;
+      }
+    }
+
+    .break-notice.active {
+      display: block;
+    }
+
+    /* Decorative elements */
+    .bg-decoration {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .bg-decoration-1 {
+      width: 400px;
+      height: 400px;
+      background: rgba(99, 102, 241, 0.3);
+      top: -100px;
+      right: -100px;
+    }
+
+    .bg-decoration-2 {
+      width: 300px;
+      height: 300px;
+      background: rgba(167, 139, 250, 0.3);
+      bottom: -50px;
+      left: -50px;
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .quote {
+        font-size: 1rem;
+      }
+
+      .button-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-decoration bg-decoration-1"></div>
+  <div class="bg-decoration bg-decoration-2"></div>
+
+  <div class="container">
+    <div class="icon-container">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    </div>
+
+    <div class="time-display" id="currentTime"></div>
+
+    <h1>Taking a break from<br><span class="domain" id="blockedDomain">this site</span></h1>
+
+    <div class="session-info" id="sessionInfo">
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--text-secondary)">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="session-label">Focus session:</span>
+      <span class="session-timer" id="sessionTimer">25:00</span>
+    </div>
+
+    <div class="card">
+      <p class="quote" id="quote">"Deep work is the superpower of the 21st century."</p>
+      <p class="quote-author" id="quoteAuthor">— Cal Newport</p>
+    </div>
+
+    <div class="break-notice" id="breakNotice">
+      ✓ 5-minute break activated. You can access this site temporarily.
+    </div>
+
+    <div class="buttons">
+      <button class="btn btn-primary" id="breakBtn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Take a 5-minute break
+      </button>
+      <div class="button-row">
+        <button class="btn btn-secondary" id="backBtn">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Go back
+        </button>
+        <button class="btn btn-secondary" id="settingsBtn">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Settings
+        </button>
+      </div>
+    </div>
+
+    <p class="message">You're building better habits. Keep going! 💪</p>
+  </div>
+
+  <script>
+    const quotes = [
+      { text: "Deep work is the superpower of the 21st century.", author: "Cal Newport" },
+      { text: "Focus is a matter of deciding what things you're not going to do.", author: "John Carmack" },
+      { text: "The successful warrior is the average person, with laser-like focus.", author: "Bruce Lee" },
+      { text: "Where focus goes, energy flows.", author: "Tony Robbins" },
+      { text: "Starve your distractions, feed your focus.", author: "Unknown" },
+      { text: "Concentrate all your thoughts upon the work at hand. The sun's rays do not burn until brought to a focus.", author: "Alexander Graham Bell" },
+      { text: "The key to success is to focus on goals, not obstacles.", author: "Unknown" },
+      { text: "You can always find a distraction if you're looking for one.", author: "Tom Kite" },
+      { text: "Lack of direction, not lack of time, is the problem. We all have 24-hour days.", author: "Zig Ziglar" },
+      { text: "It's not that I'm so smart, it's just that I stay with problems longer.", author: "Albert Einstein" },
+      { text: "The main thing is to keep the main thing the main thing.", author: "Stephen Covey" },
+      { text: "Your focus determines your reality.", author: "Qui-Gon Jinn" },
+      { text: "Simplicity boils down to two steps: Identify the essential. Eliminate the rest.", author: "Leo Babauta" },
+      { text: "Do not dwell in the past, do not dream of the future, concentrate the mind on the present moment.", author: "Buddha" },
+      { text: "The ability to focus is a superpower in an age of constant distraction.", author: "Unknown" },
+      { text: "What you stay focused on will grow.", author: "Roy T. Bennett" },
+      { text: "Multitasking is the ability to screw everything up simultaneously.", author: "Jeremy Clarkson" },
+      { text: "Be like a postage stamp. Stick to one thing until you get there.", author: "Josh Billings" },
+      { text: "Energy flows where attention goes.", author: "Michael Beckwith" },
+      { text: "One way to boost our willpower is to manage our distractions.", author: "Daniel Goleman" }
+    ];
+
+    // Get blocked URL from query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const blockedUrl = urlParams.get('url');
+    let blockedDomain = 'this site';
+
+    if (blockedUrl) {
+      try {
+        const url = new URL(blockedUrl);
+        blockedDomain = url.hostname.replace('www.', '');
+      } catch (e) {
+        blockedDomain = blockedUrl;
+      }
+    }
+
+    document.getElementById('blockedDomain').textContent = blockedDomain;
+
+    // Display random quote
+    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+    document.getElementById('quote').textContent = `"${randomQuote.text}"`;
+    document.getElementById('quoteAuthor').textContent = `— ${randomQuote.author}`;
+
+    // Update current time
+    function updateTime() {
+      const now = new Date();
+      const options = { weekday: 'long', hour: '2-digit', minute: '2-digit' };
+      document.getElementById('currentTime').textContent = now.toLocaleDateString('en-US', options);
+    }
+    updateTime();
+    setInterval(updateTime, 1000);
+
+    // Check for active focus session
+    async function checkSession() {
+      try {
+        const response = await chrome.runtime.sendMessage({ type: 'getTimeRemaining' });
+        if (response && response.remaining > 0) {
+          document.getElementById('sessionInfo').classList.add('active');
+          updateSessionTimer(response.remaining);
+        }
+      } catch (e) {
+        // Extension context may not be available
+      }
+    }
+
+    function updateSessionTimer(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      document.getElementById('sessionTimer').textContent = 
+        `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    checkSession();
+    setInterval(async () => {
+      try {
+        const response = await chrome.runtime.sendMessage({ type: 'getTimeRemaining' });
+        if (response && response.remaining > 0) {
+          updateSessionTimer(response.remaining);
+        }
+      } catch (e) {}
+    }, 1000);
+
+    // Button handlers
+    document.getElementById('breakBtn').addEventListener('click', async () => {
+      const breakUntil = Date.now() + (5 * 60 * 1000); // 5 minutes
+      
+      try {
+        // Save temporary break to storage
+        const result = await chrome.storage.local.get('temporaryBreaks');
+        const breaks = result.temporaryBreaks || {};
+        breaks[blockedDomain] = breakUntil;
+        await chrome.storage.local.set({ temporaryBreaks: breaks });
+        
+        document.getElementById('breakNotice').classList.add('active');
+        document.getElementById('breakBtn').textContent = 'Break activated!';
+        document.getElementById('breakBtn').disabled = true;
+        
+        // Redirect to the blocked site
+        setTimeout(() => {
+          if (blockedUrl) {
+            window.location.href = blockedUrl;
+          }
+        }, 1500);
+      } catch (e) {
+        // Fallback if chrome API not available
+        document.getElementById('breakNotice').classList.add('active');
+        document.getElementById('breakBtn').textContent = 'Break activated!';
+      }
+    });
+
+    document.getElementById('backBtn').addEventListener('click', () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = 'https://www.google.com';
+      }
+    });
+
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+      try {
+        chrome.runtime.openOptionsPage();
+      } catch (e) {
+        // Fallback - try to open options directly
+        window.location.href = chrome.runtime.getURL('src/options/index.html');
+      }
+    });
+  </script>
+</body>
+</html>
