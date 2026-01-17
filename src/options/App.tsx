@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BlockedSite, UserSettings, Stats } from "../../types";
+import { BlockedSite, UserSettings, Stats, WeeklySchedule } from "../../types";
 import {
   FREE_LIMITS,
   activatePremium,
@@ -33,6 +33,14 @@ function App() {
   >([]);
   const [topBlockedSites, setTopBlockedSites] = useState<BlockedSite[]>([]);
   const [weeklyTotal, setWeeklyTotal] = useState(0);
+  const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({
+    enabled: false,
+    slots: [],
+  });
+  const [showAddSlotModal, setShowAddSlotModal] = useState(false);
+  const [newSlotDay, setNewSlotDay] = useState(1);
+  const [newSlotStart, setNewSlotStart] = useState("09:00");
+  const [newSlotEnd, setNewSlotEnd] = useState("17:00");
   const [settings, setSettings] = useState<UserSettings>({
     enabled: true,
     strictMode: false,
@@ -41,6 +49,11 @@ function App() {
     notificationsEnabled: true,
     theme: "auto",
     blockedPageStyle: "motivational",
+    premium: {
+      isPremium: false,
+      licenseKey: undefined,
+      activatedAt: undefined,
+    },
   });
   const [blockedSites, setBlockedSites] = useState<BlockedSite[]>([]);
   const [stats, setStats] = useState<Stats>({
@@ -84,6 +97,7 @@ function App() {
       setBlockedSites(response.blockedSites);
       setStats(response.stats);
       await loadPremiumStatus();
+      await loadSchedule();
     } catch (error) {
       console.error("Failed to load data:", error);
     }
@@ -305,6 +319,59 @@ function App() {
     };
 
     reader.readAsText(file);
+  };
+
+  // Load schedule data
+  const loadSchedule = async () => {
+    const response = await chrome.runtime.sendMessage({
+      type: "getWeeklySchedule",
+    });
+    setWeeklySchedule(response.weeklySchedule);
+  };
+
+  // Toggle schedule on/off
+  const toggleScheduleEnabled = async () => {
+    const response = await chrome.runtime.sendMessage({
+      type: "updateWeeklySchedule",
+      payload: { enabled: !weeklySchedule.enabled },
+    });
+    setWeeklySchedule(response.weeklySchedule);
+    showSavedToast(
+      response.weeklySchedule.enabled
+        ? "Schedule enabled!"
+        : "Schedule disabled",
+    );
+  };
+
+  // Add new time slot
+  const addSlot = async () => {
+    const response = await chrome.runtime.sendMessage({
+      type: "addScheduleSlot",
+      payload: {
+        day: newSlotDay,
+        startTime: newSlotStart,
+        endTime: newSlotEnd,
+      },
+    });
+    setWeeklySchedule((prev) => ({
+      ...prev,
+      slots: [...prev.slots, response.slot],
+    }));
+    setShowAddSlotModal(false);
+    showSavedToast("Time slot added!");
+  };
+
+  // Remove time slot
+  const removeSlot = async (slotId: string) => {
+    await chrome.runtime.sendMessage({
+      type: "removeScheduleSlot",
+      payload: { slotId },
+    });
+    setWeeklySchedule((prev) => ({
+      ...prev,
+      slots: prev.slots.filter((s) => s.id !== slotId),
+    }));
+    showSavedToast("Time slot removed!");
   };
 
   return (
@@ -690,38 +757,207 @@ function App() {
 
           {/* Schedules Section */}
           {activeSection === "schedules" && (
-            <div className="settings-card">
-              <div className="settings-card-header">
-                <h2 className="settings-card-title">Blocking Schedules</h2>
-                <p className="settings-card-description">
-                  Set up automatic blocking times
-                </p>
-              </div>
-              <div className="settings-card-body">
-                <div className="text-center py-8 text-gray-400">
-                  <svg
-                    className="w-12 h-12 mx-auto mb-3 opacity-50"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <p className="mb-4">Schedule feature coming soon!</p>
-                  <p className="text-sm">
-                    Set automatic blocking times for work hours, study sessions,
-                    and more.
+            <div>
+              {/* Enable/Disable Schedule */}
+              <div className="settings-card">
+                <div className="settings-card-header">
+                  <h2 className="settings-card-title">Weekly Schedule</h2>
+                  <p className="settings-card-description">
+                    Set specific times when blocking is active
                   </p>
+                </div>
+                <div className="settings-card-body">
+                  <div className="toggle-wrapper">
+                    <div className="toggle-info">
+                      <div className="toggle-label">Enable Schedule</div>
+                      <div className="toggle-description">
+                        {weeklySchedule.enabled
+                          ? "Blocking only active during scheduled times"
+                          : "Blocking active all the time"}
+                      </div>
+                    </div>
+                    <button
+                      onClick={toggleScheduleEnabled}
+                      className={`toggle-switch ${weeklySchedule.enabled ? "active" : ""}`}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Time Slots */}
+              <div className="settings-card">
+                <div className="settings-card-header">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="settings-card-title">Time Slots</h2>
+                      <p className="settings-card-description">
+                        Add times when blocking should be active
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowAddSlotModal(true)}
+                      className="btn btn-primary text-sm"
+                    >
+                      + Add Slot
+                    </button>
+                  </div>
+                </div>
+                <div className="settings-card-body">
+                  {weeklySchedule.slots.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">
+                      <svg
+                        className="w-12 h-12 mx-auto mb-3 opacity-50"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <p>No time slots yet</p>
+                      <p className="text-sm mt-1">
+                        Add a slot to schedule when blocking is active
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                        (dayName, dayIndex) => {
+                          const daySlots = weeklySchedule.slots.filter(
+                            (s) => s.day === dayIndex,
+                          );
+
+                          return (
+                            <div
+                              key={dayIndex}
+                              className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0"
+                            >
+                              <div className="w-12 text-sm font-medium text-gray-700">
+                                {dayName}
+                              </div>
+                              <div className="flex-1 flex flex-wrap gap-2">
+                                {daySlots.length === 0 ? (
+                                  <span className="text-sm text-gray-400">
+                                    No blocking scheduled
+                                  </span>
+                                ) : (
+                                  daySlots.map((slot) => (
+                                    <div
+                                      key={slot.id}
+                                      className="flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                                    >
+                                      <span>
+                                        {slot.startTime} - {slot.endTime}
+                                      </span>
+                                      <button
+                                        onClick={() => removeSlot(slot.id)}
+                                        className="hover:text-danger"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                          );
+                        },
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Presets */}
+              <div className="settings-card">
+                <div className="settings-card-header">
+                  <h2 className="settings-card-title">Quick Presets</h2>
+                  <p className="settings-card-description">
+                    Apply common schedules with one click
+                  </p>
+                </div>
+                <div className="settings-card-body">
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      onClick={async () => {
+                        // Work hours: Mon-Fri 9-5
+                        for (let day = 1; day <= 5; day++) {
+                          await chrome.runtime.sendMessage({
+                            type: "addScheduleSlot",
+                            payload: {
+                              day,
+                              startTime: "09:00",
+                              endTime: "17:00",
+                            },
+                          });
+                        }
+                        await loadSchedule();
+                        showSavedToast("Work hours preset applied!");
+                      }}
+                      className="p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-center"
+                    >
+                      <div className="font-semibold text-gray-900">
+                        Work Hours
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Mon-Fri, 9am-5pm
+                      </div>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        // Evenings: Every day 6pm-11pm
+                        for (let day = 0; day <= 6; day++) {
+                          await chrome.runtime.sendMessage({
+                            type: "addScheduleSlot",
+                            payload: {
+                              day,
+                              startTime: "18:00",
+                              endTime: "23:00",
+                            },
+                          });
+                        }
+                        await loadSchedule();
+                        showSavedToast("Evenings preset applied!");
+                      }}
+                      className="p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-center"
+                    >
+                      <div className="font-semibold text-gray-900">
+                        Evenings
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Every day, 6pm-11pm
+                      </div>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        // Clear all slots
+                        for (const slot of weeklySchedule.slots) {
+                          await chrome.runtime.sendMessage({
+                            type: "removeScheduleSlot",
+                            payload: { slotId: slot.id },
+                          });
+                        }
+                        await loadSchedule();
+                        showSavedToast("All slots cleared!");
+                      }}
+                      className="p-4 border border-gray-200 rounded-lg hover:border-danger hover:bg-danger/5 transition-colors text-center"
+                    >
+                      <div className="font-semibold text-gray-900">
+                        Clear All
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Remove all slots
+                      </div>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           )}
-
           {/* Focus Sessions Section */}
           {activeSection === "focus-sessions" && (
             <div>
@@ -825,6 +1061,7 @@ function App() {
                       }}
                       className="p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-center"
                     >
+                      <div className="text-2xl mb-1">🍅</div>
                       <div className="font-semibold text-gray-900">Classic</div>
                       <div className="text-sm text-gray-500">25/5 min</div>
                     </button>
@@ -835,6 +1072,7 @@ function App() {
                       }}
                       className="p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-center"
                     >
+                      <div className="text-2xl mb-1">⏰</div>
                       <div className="font-semibold text-gray-900">
                         Extended
                       </div>
@@ -847,6 +1085,7 @@ function App() {
                       }}
                       className="p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-center"
                     >
+                      <div className="text-2xl mb-1">🧠</div>
                       <div className="font-semibold text-gray-900">
                         Deep Work
                       </div>
@@ -857,7 +1096,6 @@ function App() {
               </div>
             </div>
           )}
-
           {/* Appearance Section */}
           {activeSection === "appearance" && (
             <div>
@@ -1259,6 +1497,68 @@ function App() {
               </button>
               <button onClick={resetAllData} className="btn btn-danger">
                 Yes, Reset Everything
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Add Slot Modal */}
+      {showAddSlotModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md mx-4 animate-fade-in">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">
+              Add Time Slot
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="form-label">Day</label>
+                <select
+                  value={newSlotDay}
+                  onChange={(e) => setNewSlotDay(Number(e.target.value))}
+                  className="form-input"
+                >
+                  <option value={0}>Sunday</option>
+                  <option value={1}>Monday</option>
+                  <option value={2}>Tuesday</option>
+                  <option value={3}>Wednesday</option>
+                  <option value={4}>Thursday</option>
+                  <option value={5}>Friday</option>
+                  <option value={6}>Saturday</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="form-label">Start Time</label>
+                  <input
+                    type="time"
+                    value={newSlotStart}
+                    onChange={(e) => setNewSlotStart(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="form-label">End Time</label>
+                  <input
+                    type="time"
+                    value={newSlotEnd}
+                    onChange={(e) => setNewSlotEnd(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowAddSlotModal(false)}
+                className="flex-1 btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button onClick={addSlot} className="flex-1 btn btn-primary">
+                Add Slot
               </button>
             </div>
           </div>
