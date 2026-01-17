@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { BlockedSite, UserSettings, Stats } from "../utils/types";
+import { BlockedSite, UserSettings, Stats } from "../../types";
+import {
+  FREE_LIMITS,
+  activatePremium,
+  isPremium,
+  canAddMoreSites,
+} from "../utils/premium";
 import {
   getDailyFocusTime,
   getTopBlockedSites,
@@ -16,6 +22,11 @@ type Section =
   | "about";
 
 function App() {
+  const [userIsPremium, setUserIsPremium] = useState(false);
+  const [canAddSites, setCanAddSites] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [licenseKey, setLicenseKey] = useState("");
+  const [licenseError, setLicenseError] = useState("");
   const [activeSection, setActiveSection] = useState<Section>("general");
   const [dailyFocusData, setDailyFocusData] = useState<
     { day: string; minutes: number }[]
@@ -72,9 +83,16 @@ function App() {
       setSettings(response.settings);
       setBlockedSites(response.blockedSites);
       setStats(response.stats);
+      await loadPremiumStatus();
     } catch (error) {
       console.error("Failed to load data:", error);
     }
+  };
+  const loadPremiumStatus = async () => {
+    const premium = await isPremium();
+    const canAdd = await canAddMoreSites();
+    setUserIsPremium(premium);
+    setCanAddSites(canAdd);
   };
 
   const showSavedToast = (message = "Saved!") => {
@@ -98,6 +116,13 @@ function App() {
 
   const addSite = async () => {
     if (!newSite.trim()) return;
+
+    const canAdd = await canAddMoreSites();
+    if (!canAdd) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     const response = await chrome.runtime.sendMessage({
       type: "addSite",
       payload: {
@@ -109,6 +134,8 @@ function App() {
     setNewSite("");
     setNewCategory("");
     showSavedToast("Site added!");
+
+    await loadPremiumStatus();
   };
 
   const removeSite = async (id: string) => {
@@ -540,7 +567,8 @@ function App() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="settings-card-title">
-                        Blocked Sites ({blockedSites.length})
+                        Blocked Sites ({blockedSites.length}
+                        {!userIsPremium && `/${FREE_LIMITS.maxBlockedSites}`})
                       </h2>
                       <p className="settings-card-description">
                         Manage your blocked websites
@@ -1231,6 +1259,72 @@ function App() {
               </button>
               <button onClick={resetAllData} className="btn btn-danger">
                 Yes, Reset Everything
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md mx-4 animate-fade-in">
+            <div className="text-center mb-4">
+              <span className="text-4xl">⭐</span>
+              <h3 className="text-lg font-bold text-gray-900 mt-2">
+                Upgrade to Premium
+              </h3>
+              <p className="text-gray-500 mt-1">
+                You've reached the free limit of {FREE_LIMITS.maxBlockedSites}{" "}
+                blocked sites.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Enter License Key
+                </label>
+                <input
+                  type="text"
+                  value={licenseKey}
+                  onChange={(e) => setLicenseKey(e.target.value)}
+                  placeholder="FLOW-XXXX-XXXX-XXXX"
+                  className="form-input mt-1"
+                />
+                {licenseError && (
+                  <p className="text-sm text-danger mt-1">{licenseError}</p>
+                )}
+              </div>
+
+              <button
+                onClick={async () => {
+                  const success = await activatePremium(licenseKey);
+                  if (success) {
+                    setShowUpgradeModal(false);
+                    setLicenseKey("");
+                    setLicenseError("");
+                    await loadPremiumStatus();
+                    showSavedToast("Premium activated! 🎉");
+                  } else {
+                    setLicenseError(
+                      "Invalid license key. Must start with FLOW-",
+                    );
+                  }
+                }}
+                className="w-full btn btn-primary"
+              >
+                Activate Premium
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowUpgradeModal(false);
+                  setLicenseKey("");
+                  setLicenseError("");
+                }}
+                className="w-full btn btn-secondary"
+              >
+                Maybe Later
               </button>
             </div>
           </div>

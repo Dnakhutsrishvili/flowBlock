@@ -12,7 +12,7 @@ export interface FocusSession {
   endTime?: number;
   duration: number;
   completed: boolean;
-  type: 'focus' | 'break';
+  type: "focus" | "break";
 }
 
 export interface Schedule {
@@ -31,9 +31,9 @@ export interface WeeklySchedule {
 
 export interface ScheduleSlot {
   id: string;
-  day: number; // 0-6 (Sun-Sat)
-  startTime: string; // "HH:MM"
-  endTime: string; // "HH:MM"
+  day: number;
+  startTime: string;
+  endTime: string;
   enabled: boolean;
 }
 
@@ -43,8 +43,9 @@ export interface UserSettings {
   defaultSessionLength: number;
   breakLength: number;
   notificationsEnabled: boolean;
-  theme: 'light' | 'dark' | 'auto';
-  blockedPageStyle: 'minimal' | 'motivational' | 'serene';
+  theme: "light" | "dark" | "auto";
+  blockedPageStyle: "minimal" | "motivational" | "serene";
+  premium: PremiumStatus;
 }
 
 export interface Stats {
@@ -53,4 +54,10 @@ export interface Stats {
   currentStreak: number;
   longestStreak: number;
   sessionsCompleted: number;
+}
+
+export interface PremiumStatus {
+  isPremium: boolean;
+  licenseKey?: string;
+  activatedAt?: number;
 }
