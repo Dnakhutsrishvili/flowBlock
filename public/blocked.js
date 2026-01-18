@@ -134,6 +134,8 @@ setInterval(async () => {
 }, 1000);
 
 // Button handlers
+
+// BREAK BUTTON - Allow 5 minute break
 document.getElementById("breakBtn").addEventListener("click", async () => {
   const breakUntil = Date.now() + 5 * 60 * 1000; // 5 minutes
 
@@ -161,10 +163,12 @@ document.getElementById("breakBtn").addEventListener("click", async () => {
   }
 });
 
+// BACK BUTTON - Go to safe page
 document.getElementById("backBtn").addEventListener("click", () => {
   window.close();
 });
 
+// SETTINGS BUTTON - Open options page
 document.getElementById("settingsBtn").addEventListener("click", () => {
   try {
     chrome.runtime.openOptionsPage();
