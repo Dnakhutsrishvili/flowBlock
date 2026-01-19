@@ -16,8 +16,6 @@ type Section =
   | "general"
   | "blocked-sites"
   | "schedules"
-  | "focus-sessions"
-  | "appearance"
   | "analytics"
   | "about";
 
@@ -69,7 +67,6 @@ function App() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("Saved!");
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [dailyGoal, setDailyGoal] = useState(120);
 
   useEffect(() => {
     loadData();
@@ -224,34 +221,6 @@ function App() {
       ),
     },
     {
-      id: "focus-sessions",
-      label: "Focus Sessions",
-      icon: (
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "appearance",
-      label: "Appearance",
-      icon: (
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
-          />
-        </svg>
-      ),
-    },
-    {
       id: "analytics",
       label: "Analytics",
       icon: (
@@ -378,21 +347,12 @@ function App() {
     <div className="settings-container">
       {/* Header */}
       <header className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center">
-          <svg
-            className="w-6 h-6 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-            />
-          </svg>
-        </div>
+        <img
+          src="/icons/icon48.png"
+          alt="FlowBlock"
+          className="w-10 h-10 rounded-xl"
+        />
+
         <div>
           <h1 className="text-xl font-bold text-gray-900">
             FlowBlock Settings
@@ -958,236 +918,6 @@ function App() {
               </div>
             </div>
           )}
-          {/* Focus Sessions Section */}
-          {activeSection === "focus-sessions" && (
-            <div>
-              <div className="settings-card">
-                <div className="settings-card-header">
-                  <h2 className="settings-card-title">Session Settings</h2>
-                  <p className="settings-card-description">
-                    Customize your focus and break durations
-                  </p>
-                </div>
-                <div className="settings-card-body space-y-6">
-                  <div className="form-group">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="form-label mb-0">
-                        Default Focus Duration
-                      </label>
-                      <span className="text-sm font-semibold text-primary">
-                        {settings.defaultSessionLength} minutes
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="15"
-                      max="120"
-                      step="5"
-                      value={settings.defaultSessionLength}
-                      onChange={(e) =>
-                        updateSetting(
-                          "defaultSessionLength",
-                          parseInt(e.target.value),
-                        )
-                      }
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
-                    />
-                    <div className="flex justify-between text-xs text-gray-400 mt-1">
-                      <span>15 min</span>
-                      <span>120 min</span>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="form-label mb-0">Break Duration</label>
-                      <span className="text-sm font-semibold text-secondary">
-                        {settings.breakLength} minutes
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="5"
-                      max="30"
-                      step="5"
-                      value={settings.breakLength}
-                      onChange={(e) =>
-                        updateSetting("breakLength", parseInt(e.target.value))
-                      }
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-secondary"
-                    />
-                    <div className="flex justify-between text-xs text-gray-400 mt-1">
-                      <span>5 min</span>
-                      <span>30 min</span>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Daily Focus Goal</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="number"
-                        min="30"
-                        max="480"
-                        step="30"
-                        value={dailyGoal}
-                        onChange={(e) => setDailyGoal(parseInt(e.target.value))}
-                        className="form-input w-32"
-                      />
-                      <span className="text-sm text-gray-500">
-                        minutes per day
-                      </span>
-                    </div>
-                    <p className="form-hint">
-                      Recommended: 120-240 minutes for productive work
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="settings-card">
-                <div className="settings-card-header">
-                  <h2 className="settings-card-title">Pomodoro Presets</h2>
-                  <p className="settings-card-description">
-                    Quick session templates
-                  </p>
-                </div>
-                <div className="settings-card-body">
-                  <div className="grid grid-cols-3 gap-3">
-                    <button
-                      onClick={() => {
-                        updateSetting("defaultSessionLength", 25);
-                        updateSetting("breakLength", 5);
-                      }}
-                      className="p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-center"
-                    >
-                      <div className="text-2xl mb-1">🍅</div>
-                      <div className="font-semibold text-gray-900">Classic</div>
-                      <div className="text-sm text-gray-500">25/5 min</div>
-                    </button>
-                    <button
-                      onClick={() => {
-                        updateSetting("defaultSessionLength", 45);
-                        updateSetting("breakLength", 15);
-                      }}
-                      className="p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-center"
-                    >
-                      <div className="text-2xl mb-1">⏰</div>
-                      <div className="font-semibold text-gray-900">
-                        Extended
-                      </div>
-                      <div className="text-sm text-gray-500">45/15 min</div>
-                    </button>
-                    <button
-                      onClick={() => {
-                        updateSetting("defaultSessionLength", 90);
-                        updateSetting("breakLength", 20);
-                      }}
-                      className="p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-center"
-                    >
-                      <div className="text-2xl mb-1">🧠</div>
-                      <div className="font-semibold text-gray-900">
-                        Deep Work
-                      </div>
-                      <div className="text-sm text-gray-500">90/20 min</div>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          {/* Appearance Section */}
-          {activeSection === "appearance" && (
-            <div>
-              <div className="settings-card">
-                <div className="settings-card-header">
-                  <h2 className="settings-card-title">Theme</h2>
-                  <p className="settings-card-description">
-                    Choose your preferred color scheme
-                  </p>
-                </div>
-                <div className="settings-card-body">
-                  <div className="grid grid-cols-3 gap-3">
-                    {(["light", "dark", "auto"] as const).map((theme) => (
-                      <button
-                        key={theme}
-                        onClick={() => updateSetting("theme", theme)}
-                        className={`p-4 border-2 rounded-lg transition-colors ${
-                          settings.theme === theme
-                            ? "border-primary bg-primary/5"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div
-                          className={`w-10 h-10 mx-auto mb-2 rounded-lg ${
-                            theme === "light"
-                              ? "bg-white border border-gray-200"
-                              : theme === "dark"
-                                ? "bg-gray-800"
-                                : "bg-gradient-to-br from-white to-gray-800"
-                          }`}
-                        />
-                        <div className="text-sm font-medium capitalize">
-                          {theme}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="settings-card">
-                <div className="settings-card-header">
-                  <h2 className="settings-card-title">Blocked Page Style</h2>
-                  <p className="settings-card-description">
-                    How blocked sites appear when visited
-                  </p>
-                </div>
-                <div className="settings-card-body">
-                  <div className="grid grid-cols-3 gap-3">
-                    {(
-                      [
-                        {
-                          id: "minimal",
-                          label: "Minimal",
-                          desc: "Simple, clean design",
-                        },
-                        {
-                          id: "motivational",
-                          label: "Motivational",
-                          desc: "Inspiring quotes",
-                        },
-                        {
-                          id: "serene",
-                          label: "Serene",
-                          desc: "Calming visuals",
-                        },
-                      ] as const
-                    ).map((style) => (
-                      <button
-                        key={style.id}
-                        onClick={() =>
-                          updateSetting("blockedPageStyle", style.id)
-                        }
-                        className={`p-4 border-2 rounded-lg transition-colors text-left ${
-                          settings.blockedPageStyle === style.id
-                            ? "border-primary bg-primary/5"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="font-medium text-gray-900">
-                          {style.label}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {style.desc}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
           {/* Analytics Section */}
           {activeSection === "analytics" && (
             <div>
@@ -1328,21 +1058,11 @@ function App() {
                 </div>
                 <div className="settings-card-body">
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center">
-                      <svg
-                        className="w-10 h-10 text-white"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                        />
-                      </svg>
-                    </div>
+                    <img
+                      src="/icons/icon48.png"
+                      alt="FlowBlock"
+                      className="w-10 h-10 rounded-xl"
+                    />
                     <div>
                       <h3 className="text-lg font-bold text-gray-900">
                         FlowBlock
