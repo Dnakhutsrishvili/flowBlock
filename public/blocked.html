@@ -296,6 +296,61 @@
         left: -50px;
       }
 
+      .premium-banner {
+        display: none;
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%);
+        border: 1px solid rgba(79, 70, 229, 0.2);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin-top: 1.5rem;
+      }
+
+      .premium-banner.visible {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .premium-star {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .premium-text {
+        flex: 1;
+      }
+
+      .premium-title {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .premium-features {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .btn-upgrade {
+        background: var(--button-primary-bg);
+        color: white;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+      }
+
+      .btn-upgrade:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+      }
+
       @media (max-width: 480px) {
         h1 {
           font-size: 1.5rem;
@@ -307,6 +362,11 @@
 
         .button-row {
           flex-direction: column;
+        }
+
+        .premium-banner.visible {
+          flex-direction: column;
+          text-align: center;
         }
       }
     </style>
@@ -320,7 +380,7 @@
         <img
           src="icons/icon128.png"
           alt="FlowBlock"
-          class="w-16 h-16 rounded-2xl"
+          style="width: 40px; height: 40px; border-radius: 12px;"
         />
       </div>
 
@@ -398,6 +458,15 @@
       </div>
 
       <p class="message">You're building better habits. Keep going! 💪</p>
+
+      <div class="premium-banner" id="premiumBanner">
+        <span class="premium-star">⭐</span>
+        <div class="premium-text">
+          <div class="premium-title">Unlock FlowBlock Premium</div>
+          <div class="premium-features">Unlimited sites, weekly schedules & advanced analytics</div>
+        </div>
+        <button class="btn-upgrade" id="upgradeBtn">Upgrade</button>
+      </div>
     </div>
 
     <script src="./blocked.js"></script>

@@ -67,46 +67,41 @@ function domainMatchesPattern(domain: string, pattern: string): boolean {
  * Checks if a URL should be blocked based on blocked sites list and schedule
  */
 async function isUrlBlocked(url: string): Promise<boolean> {
-  const settings = await getSettings();
-
-  // Blocking disabled globally
-  if (!settings.enabled) {
-    return false;
-  }
-
-  // Check weekly schedule
-  const weeklySchedule = await getWeeklySchedule();
-  if (weeklySchedule.enabled && !isWithinSchedule(weeklySchedule)) {
-    return false; // Outside scheduled blocking hours
-  }
-
   const domain = extractDomain(url);
-  if (!domain) {
-    return false;
-  }
+  if (!domain) return false;
 
   // Don't block extension pages
-  if (url.startsWith(chrome.runtime.getURL(""))) {
+  if (url.startsWith(chrome.runtime.getURL(""))) return false;
+
+  // Batch all storage reads in parallel
+  const [settings, weeklySchedule, breakResult, blockedSites] =
+    await Promise.all([
+      getSettings(),
+      getWeeklySchedule(),
+      chrome.storage.local.get("temporaryBreaks"),
+      getBlockedSites(),
+    ]);
+
+  if (!settings.enabled) return false;
+
+  if (weeklySchedule.enabled && !isWithinSchedule(weeklySchedule)) {
     return false;
   }
 
   // Check for temporary break
-  const breakResult = await chrome.storage.local.get("temporaryBreaks");
   const breaks = breakResult.temporaryBreaks || {};
   const breakUntil = breaks[domain];
 
   if (breakUntil && Date.now() < breakUntil) {
-    // User is on a break for this site, don't block
     return false;
   }
 
-  // Clean up expired breaks
+  // Clean up expired breaks (fire and forget)
   if (breakUntil && Date.now() >= breakUntil) {
     delete breaks[domain];
-    await chrome.storage.local.set({ temporaryBreaks: breaks });
+    chrome.storage.local.set({ temporaryBreaks: breaks });
   }
 
-  const blockedSites = await getBlockedSites();
   return blockedSites.some((site) => domainMatchesPattern(domain, site.domain));
 }
 
@@ -115,16 +110,18 @@ async function isUrlBlocked(url: string): Promise<boolean> {
  */
 async function incrementBlockCount(url: string): Promise<void> {
   const domain = extractDomain(url);
-  const blockedSites = await getBlockedSites();
+  const [blockedSites, stats] = await Promise.all([
+    getBlockedSites(),
+    getStats(),
+  ]);
 
   for (const site of blockedSites) {
     if (domainMatchesPattern(domain, site.domain)) {
       site.blockCount++;
-      await chrome.storage.local.set({ blockedSites });
-
-      // Update total blocks in stats
-      const stats = await getStats();
-      await updateStats({ totalBlocks: stats.totalBlocks + 1 });
+      await Promise.all([
+        chrome.storage.local.set({ blockedSites }),
+        updateStats({ totalBlocks: stats.totalBlocks + 1 }),
+      ]);
       break;
     }
   }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { BlockedSite, FocusSession, Stats, UserSettings } from "../utils/types";
+import { getPremiumStatus, FREE_LIMITS } from "../utils/premium";
 
 interface PomodoroState {
   enabled: boolean;
@@ -43,6 +44,7 @@ function App() {
   const [showPomodoroSettings, setShowPomodoroSettings] = useState(false);
   const [pomodoroWorkDuration, setPomodoroWorkDuration] = useState(25);
   const [pomodoroBreakDuration, setPomodoroBreakDuration] = useState(5);
+  const [userIsPremium, setUserIsPremium] = useState(true); // default true to avoid flash
 
   // Load initial data
   useEffect(() => {
@@ -76,6 +78,10 @@ function App() {
       setCurrentSession(response.currentSession);
       setStats(response.stats);
       setBlockedSites(response.blockedSites);
+
+      // Load premium status
+      const premiumInfo = await getPremiumStatus();
+      setUserIsPremium(premiumInfo.isPremium);
 
       // Load Pomodoro state
       const pomodoroResponse = await chrome.runtime.sendMessage({
@@ -278,6 +284,11 @@ function App() {
                   }`}
                 >
                   🍅 Pomodoro
+                  {!userIsPremium && (
+                    <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-primary to-secondary text-white rounded">
+                      PRO
+                    </span>
+                  )}
                 </button>
               </div>
 
@@ -547,9 +558,24 @@ function App() {
 
         {/* Quick Add Site */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700 mb-2">
-            Quick Add Site
-          </h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-gray-700">
+              Quick Add Site
+            </h2>
+            {!userIsPremium && (
+              <span
+                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  blockedSites.length >= FREE_LIMITS.maxBlockedSites
+                    ? "bg-danger/10 text-danger"
+                    : blockedSites.length >= FREE_LIMITS.maxBlockedSites - 1
+                      ? "bg-warning/10 text-warning"
+                      : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                {blockedSites.length}/{FREE_LIMITS.maxBlockedSites} sites
+              </span>
+            )}
+          </div>
           <div className="flex gap-2">
             <input
               type="text"
@@ -619,6 +645,34 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* Premium Upgrade Banner */}
+      {!userIsPremium && (
+        <div className="border-t border-gray-200 bg-gradient-to-r from-primary/5 to-secondary/5 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <p className="text-xs font-bold text-gray-900">
+                Upgrade to Premium
+              </p>
+              <p className="text-[10px] text-gray-500 mt-0.5">
+                Unlimited sites, schedules & 30-day analytics
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                chrome.tabs.create({
+                  url: chrome.runtime.getURL(
+                    "src/options/index.html?upgrade=true",
+                  ),
+                });
+              }}
+              className="px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-primary to-secondary rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
+            >
+              Upgrade
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

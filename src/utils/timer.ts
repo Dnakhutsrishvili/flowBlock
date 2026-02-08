@@ -1,5 +1,6 @@
 import { FocusSession } from './types';
-import { getFocusSessions, saveFocusSession, getStats, updateStats, getSettings } from './storage';
+import { saveFocusSession, getStats, updateStats } from './storage';
+import { generateId } from './helpers';
 
 const ALARM_NAME = 'flowblock-session-end';
 const CURRENT_SESSION_KEY = 'currentSession';
@@ -27,10 +28,6 @@ const DEFAULT_POMODORO_STATE: PomodoroState = {
   isOnBreak: false,
   totalCyclesCompleted: 0
 };
-
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
 
 export async function getPomodoroState(): Promise<PomodoroState> {
   const result = await chrome.storage.local.get(POMODORO_STATE_KEY);

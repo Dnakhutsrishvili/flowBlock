@@ -116,7 +116,7 @@ function showWarningToast(message: string, duration = 5000) {
     </svg>
     <div class="flowblock-toast-content">
       <div class="flowblock-toast-title">FlowBlock</div>
-      <div class="flowblock-toast-message">${message}</div>
+      <div class="flowblock-toast-message"></div>
     </div>
     <button class="flowblock-toast-close">
       <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,6 +124,10 @@ function showWarningToast(message: string, duration = 5000) {
       </svg>
     </button>
   `;
+
+  // Set message via textContent to prevent XSS
+  const messageEl = toast.querySelector('.flowblock-toast-message');
+  if (messageEl) messageEl.textContent = message;
   
   document.body.appendChild(toast);
   

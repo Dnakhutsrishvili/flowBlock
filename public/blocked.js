@@ -176,3 +176,28 @@ document.getElementById("settingsBtn").addEventListener("click", () => {
     window.location.href = chrome.runtime.getURL("src/options/index.html");
   }
 });
+
+// PREMIUM BANNER - Show for free users
+async function checkPremiumStatus() {
+  try {
+    const result = await chrome.storage.local.get("settings");
+    const isPremium = result.settings?.premium?.isPremium || false;
+    if (!isPremium) {
+      document.getElementById("premiumBanner").classList.add("visible");
+    }
+  } catch (e) {
+    // Extension context unavailable - hide banner
+  }
+}
+checkPremiumStatus();
+
+// UPGRADE BUTTON - Open options with upgrade modal
+document.getElementById("upgradeBtn").addEventListener("click", () => {
+  try {
+    window.location.href = chrome.runtime.getURL(
+      "src/options/index.html?upgrade=true",
+    );
+  } catch (e) {
+    // Fallback
+  }
+});

@@ -7,6 +7,7 @@ import {
   WeeklySchedule,
   ScheduleSlot,
 } from "./types";
+import { generateId } from "./helpers";
 
 const STORAGE_KEYS = {
   BLOCKED_SITES: "blockedSites",
@@ -39,10 +40,6 @@ const DEFAULT_STATS: Stats = {
   longestStreak: 0,
   sessionsCompleted: 0,
 };
-
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
 
 export async function getBlockedSites(): Promise<BlockedSite[]> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.BLOCKED_SITES);
@@ -102,13 +99,18 @@ export async function getFocusSessions(): Promise<FocusSession[]> {
 }
 
 export async function saveFocusSession(session: FocusSession): Promise<void> {
-  const sessions = await getFocusSessions();
+  let sessions = await getFocusSessions();
   const index = sessions.findIndex((s) => s.id === session.id);
   if (index >= 0) {
     sessions[index] = session;
   } else {
     sessions.push(session);
   }
+
+  // Prune sessions older than 30 days to prevent unbounded storage growth
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  sessions = sessions.filter((s) => s.startTime > thirtyDaysAgo);
+
   await chrome.storage.local.set({ [STORAGE_KEYS.FOCUS_SESSIONS]: sessions });
 }
 
@@ -157,7 +159,7 @@ export async function addScheduleSlot(
   const schedule = await getWeeklySchedule();
   const newSlot: ScheduleSlot = {
     ...slot,
-    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: generateId(),
   };
   schedule.slots.push(newSlot);
   await chrome.storage.local.set({ [STORAGE_KEYS.WEEKLY_SCHEDULE]: schedule });

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BlockedSite, UserSettings, Stats, WeeklySchedule } from "../../types";
+import { BlockedSite, UserSettings, Stats, WeeklySchedule } from "../utils/types";
 import {
   FREE_LIMITS,
   activatePremium,
@@ -21,7 +21,6 @@ type Section =
 
 function App() {
   const [userIsPremium, setUserIsPremium] = useState(false);
-  const [canAddSites, setCanAddSites] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [licenseKey, setLicenseKey] = useState("");
   const [licenseError, setLicenseError] = useState("");
@@ -70,6 +69,13 @@ function App() {
 
   useEffect(() => {
     loadData();
+
+    // Auto-open upgrade modal if navigated with ?upgrade=true
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("upgrade") === "true") {
+      setShowUpgradeModal(true);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   }, []);
 
   useEffect(() => {
@@ -101,9 +107,7 @@ function App() {
   };
   const loadPremiumStatus = async () => {
     const premium = await isPremium();
-    const canAdd = await canAddMoreSites();
     setUserIsPremium(premium);
-    setCanAddSites(canAdd);
   };
 
   const showSavedToast = (message = "Saved!") => {
@@ -267,24 +271,35 @@ function App() {
     const reader = new FileReader();
 
     reader.onload = async (e) => {
-      const text = e.target?.result as string;
-      const sites = JSON.parse(text);
+      try {
+        const text = e.target?.result as string;
+        const sites = JSON.parse(text);
 
-      for (const site of blockedSites) {
-        await chrome.runtime.sendMessage({
-          type: "removeSite",
-          payload: { id: site.id },
-        });
-      }
-      for (const site of sites) {
-        await chrome.runtime.sendMessage({
-          type: "addSite",
-          payload: { domain: site.domain, category: site.category },
-        });
-      }
+        if (!Array.isArray(sites)) {
+          showSavedToast("Invalid file format");
+          return;
+        }
 
-      await loadData();
-      showSavedToast("Sites imported!");
+        for (const site of blockedSites) {
+          await chrome.runtime.sendMessage({
+            type: "removeSite",
+            payload: { id: site.id },
+          });
+        }
+        for (const site of sites) {
+          if (site.domain) {
+            await chrome.runtime.sendMessage({
+              type: "addSite",
+              payload: { domain: site.domain, category: site.category },
+            });
+          }
+        }
+
+        await loadData();
+        showSavedToast("Sites imported!");
+      } catch {
+        showSavedToast("Failed to import: invalid JSON file");
+      }
     };
 
     reader.readAsText(file);
@@ -376,7 +391,22 @@ function App() {
                 }`}
               >
                 {item.icon}
-                {item.label}
+                <span className="flex-1 text-left">{item.label}</span>
+                {!userIsPremium &&
+                  (item.id === "schedules" || item.id === "analytics") && (
+                    <span
+                      className="px-1.5 py-0.5 text-[10px] font-bold rounded"
+                      style={{
+                        background:
+                          activeSection === item.id
+                            ? "rgba(255,255,255,0.25)"
+                            : "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                        color: "white",
+                      }}
+                    >
+                      PRO
+                    </span>
+                  )}
               </button>
             ))}
           </nav>
@@ -718,6 +748,33 @@ function App() {
           {/* Schedules Section */}
           {activeSection === "schedules" && (
             <div>
+              {/* Premium Upgrade Card */}
+              {!userIsPremium && (
+                <div className="settings-card" style={{ background: "linear-gradient(135deg, rgba(79,70,229,0.05), rgba(124,58,237,0.05))", borderColor: "rgba(79,70,229,0.2)" }}>
+                  <div className="settings-card-body text-center" style={{ padding: "2rem 1.5rem" }}>
+                    <span style={{ fontSize: "2.5rem", display: "block", marginBottom: "0.75rem" }}>📅</span>
+                    <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#111827", marginBottom: "0.5rem" }}>
+                      Unlock Weekly Schedules
+                    </h3>
+                    <p style={{ color: "#6b7280", marginBottom: "1rem", fontSize: "0.875rem" }}>
+                      Set specific times when blocking is active. Perfect for work hours, study sessions, or winding down.
+                    </p>
+                    <ul style={{ textAlign: "left", maxWidth: "280px", margin: "0 auto 1.25rem", fontSize: "0.875rem", color: "#374151" }}>
+                      <li style={{ marginBottom: "0.5rem" }}>✓ Schedule blocking for specific days & times</li>
+                      <li style={{ marginBottom: "0.5rem" }}>✓ Quick presets for work hours & evenings</li>
+                      <li>✓ Automatic activation — set it and forget it</li>
+                    </ul>
+                    <button
+                      onClick={() => setShowUpgradeModal(true)}
+                      className="btn btn-primary"
+                      style={{ padding: "0.75rem 2rem", fontSize: "0.9375rem" }}
+                    >
+                      Upgrade to Premium
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Enable/Disable Schedule */}
               <div className="settings-card">
                 <div className="settings-card-header">
@@ -737,7 +794,13 @@ function App() {
                       </div>
                     </div>
                     <button
-                      onClick={toggleScheduleEnabled}
+                      onClick={() => {
+                        if (!userIsPremium) {
+                          setShowUpgradeModal(true);
+                          return;
+                        }
+                        toggleScheduleEnabled();
+                      }}
                       className={`toggle-switch ${weeklySchedule.enabled ? "active" : ""}`}
                     />
                   </div>
@@ -755,7 +818,13 @@ function App() {
                       </p>
                     </div>
                     <button
-                      onClick={() => setShowAddSlotModal(true)}
+                      onClick={() => {
+                        if (!userIsPremium) {
+                          setShowUpgradeModal(true);
+                          return;
+                        }
+                        setShowAddSlotModal(true);
+                      }}
                       className="btn btn-primary text-sm"
                     >
                       + Add Slot
@@ -921,6 +990,40 @@ function App() {
           {/* Analytics Section */}
           {activeSection === "analytics" && (
             <div>
+              {/* Premium Analytics Banner */}
+              {!userIsPremium && (
+                <div
+                  className="settings-card"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(79,70,229,0.05), rgba(124,58,237,0.05))",
+                    borderColor: "rgba(79,70,229,0.2)",
+                  }}
+                >
+                  <div className="settings-card-body">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span style={{ fontSize: "1.75rem" }}>📊</span>
+                        <div>
+                          <div style={{ fontWeight: 600, color: "#111827" }}>
+                            Viewing 7-day analytics
+                          </div>
+                          <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+                            Upgrade to Premium for 30-day history and deeper insights
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowUpgradeModal(true)}
+                        className="btn btn-primary"
+                        style={{ whiteSpace: "nowrap" }}
+                      >
+                        Upgrade
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Weekly Overview Cards */}
               <div className="settings-card">
                 <div className="settings-card-header">
@@ -1294,9 +1397,35 @@ function App() {
                 Upgrade to Premium
               </h3>
               <p className="text-gray-500 mt-1">
-                You've reached the free limit of {FREE_LIMITS.maxBlockedSites}{" "}
-                blocked sites.
+                Unlock the full power of FlowBlock
               </p>
+            </div>
+
+            {/* Feature checklist */}
+            <div
+              style={{
+                background: "#f9fafb",
+                borderRadius: "0.75rem",
+                padding: "1rem 1.25rem",
+                marginBottom: "1rem",
+              }}
+            >
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", fontSize: "0.8125rem" }}>
+                {[
+                  "Unlimited blocked sites",
+                  "Weekly schedules",
+                  "30-day analytics",
+                  "Pomodoro tracking",
+                ].map((feature) => (
+                  <div
+                    key={feature}
+                    style={{ display: "flex", alignItems: "center", gap: "0.375rem", color: "#374151" }}
+                  >
+                    <span style={{ color: "#10b981", fontWeight: 700 }}>✓</span>
+                    {feature}
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -1324,7 +1453,7 @@ function App() {
                     setLicenseKey("");
                     setLicenseError("");
                     await loadPremiumStatus();
-                    showSavedToast("Premium activated! 🎉");
+                    showSavedToast("Premium activated!");
                   } else {
                     setLicenseError(
                       "Invalid license key. Must start with FLOW-",

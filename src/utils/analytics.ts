@@ -1,5 +1,5 @@
 import { FocusSession, BlockedSite } from "./types";
-import { getFocusSessions, getBlockedSites, getStats } from "./storage";
+import { getFocusSessions, getBlockedSites } from "./storage";
 
 export async function getWeeklyFocusSessions(): Promise<FocusSession[]> {
   const sessions = await getFocusSessions();
